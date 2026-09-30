@@ -4,7 +4,7 @@
 
 **Built with:** Python 3.14, LangChain, LangGraph, and a switchable AI model (OpenAI or Google Gemini).
 
-**Status (22 September 2026):** working end to end. It scored **45/45 fields correct (100%)** on a 5-invoice test set using Gemini.
+**Status (30 September 2026):** working end to end on a 15-invoice test set using Gemini. Silent errors went from **20%** (baseline) to **13.3%** after Fixes 1–3, and to **0%** after FIX 4 and FIX 5. That 0% is **partly projected**: only 3 invoices were re-run after FIX 4 and FIX 5 (see section 8). The first 5-invoice set scored 45/45 fields correct (100%).
 
 ---
 
@@ -39,7 +39,8 @@ PDF -> load_pdf (read the text) -> extract (AI fills in a form) -> validate (che
 | `evaluate.py` | Runs every test invoice, scores the accuracy and the escalation quality |
 | `invoices/` | 15 test invoice PDFs (`invoice_01` to `invoice_15`) |
 | `answer_keys/` | The correct answers for each test invoice, plus `notes` on judgment calls |
-| `results/` | Reports, and the AI's raw output per provider and model (e.g. `gemini_gemini-3-flash-preview/`) |
+| `results/` | Reports, and the AI's raw output per provider and model (e.g. `gemini_gemini-3-flash-preview/`). Not committed to Git |
+| `reports/` | The evaluation reports worth keeping (baseline and after-fix), committed to Git |
 | `.env` | Private settings and API keys. **Never share or commit this file.** |
 | `requirements.txt` | The Python packages the project needs |
 
@@ -68,6 +69,7 @@ python -m venv venv                                            # 1. create a pri
 | `OPENAI_API_KEY` | Needed when the provider is `openai` |
 | `GEMINI_API_KEY` | Needed when the provider is `gemini` |
 | `AI_MODEL` | Optional. If it's left out: `gpt-4o-mini` for OpenAI, `gemini-2.5-flash-lite` for Gemini. |
+| `DATE_FORMAT` | Optional. The client's numeric date order: `DMY`, `MDY` or `unknown` (the default). See section 8. |
 
 > **Warning: free-tier Gemini keys and data privacy.** With a free-tier Gemini key, data sent to the API may be used by Google to improve its products. Only use fake or generated invoices with a free key. **Never send real company or client invoices.**
 
@@ -390,13 +392,13 @@ Improvements made in response, so a quota wall never wastes an hour again:
 A separate bug surfaced here too: the fallback model `gemini-2.5-flash` now returns **404
 (retired)**, so the default was changed to a model that is still served.
 
-### Status: the after-fix measurement is PENDING
+### Status at the end of Day 3: after-fix measurement pending
 
-The three fixes are written, commented and checked offline: the discount and freight cases now
-reconcile, a genuine mismatch still escalates, and a retry alone escalates. **They have not yet
-been measured end to end.** The baseline is saved as
-`reports/evaluation_report_BEFORE_FIX.md` (20% silent errors), and the comparison is the first
-job once quota is available.
+The three fixes were written, commented and checked offline: the discount and freight cases
+reconcile, a genuine mismatch still escalates, and a retry alone escalates. They could not be
+measured end to end that day. The baseline is saved as
+`reports/evaluation_report_BEFORE_FIX.md` (20% silent errors). **The after-fix measurement was
+done on 30 September; see section 8.**
 
 ### Lessons learned
 
@@ -476,20 +478,130 @@ do real work: they are what makes a cheaper or weaker model usable at all.
    off a long invoice) and a long client timeout, plus the `langchain-ollama` package. The
    per-model result folders are still in place, so a local model's results would stay separate.
 
-## 8. Known limitations
+---
+
+## 8. 30 September 2026: after-fix evaluation, FIX 4 and FIX 5
+
+### Steps completed
+
+- Ran the **after-fix evaluation**: all 15 invoices, fresh (no `--reuse`), on
+  `gemini-3-flash-preview`, the same model as the baseline. Saved as
+  `reports/evaluation_report_AFTER_FIX.md`.
+- Traced the two remaining silent errors (invoices 13 and 15) to their causes.
+- Applied **FIX 4** (ambiguous dates) and **FIX 5** (no calculated subtotal or tax), and re-ran
+  invoices 03, 13 and 15.
+- Widened FIX 4's date rule to hyphens and dots, and checked it offline on all 15 invoices.
+
+### After Fixes 1–3: silent errors 20% → 13.3%
+
+| Measure | Before fix | After Fixes 1–3 |
+|---|---|---|
+| **Silent error rate** | 20.0% (07, 08, 13) | **13.3%** (13, 15) |
+| clean_pass | 80.0% | 86.7% |
+| caught / over_cautious | 0% / 0% | 0% / 0% |
+| Escalation rate | 0.0% | 0.0% |
+| Field accuracy | 97.0% | 98.8% |
+
+Percentages are compared, not raw counts, because the grader went from 9 to 11 fields.
+
+- **Fix 1 (discount and shipping fields): confirmed working.** invoice_07 now reads 3 real items
+  plus a discount of 8,680.00; invoice_08 reads 4 real items, subtotal 2,755.00 and shipping
+  185.00. Both were correct on the first attempt, with nothing invented.
+- **Fixes 2 and 3: not tested live.** Every invoice passed on the first attempt, so no retry
+  happened and neither rule had anything to do. They remain checked offline only.
+- **invoice_13 (still a silent error):** the informal bill prints only a Total, and the model
+  copied it into `subtotal`. The answer key says subtotal should be empty. A convention question,
+  not a reading mistake.
+- **invoice_15 (new silent error):** the only date printed is `04/05/2026`, with nothing on the
+  page to say which number is the day. The baseline run answered 4 May (matching the key); this
+  run answered 5 April. Nothing in the code changed for dates.
+
+### Lesson: invoice_15 passed the baseline by luck
+
+The model's answer on a genuinely ambiguous date **varies between runs**, even at temperature 0.
+The baseline's "correct" answer was a coin landing the right way up, not a sign the agent could
+handle the case. The real defect was that the agent **auto approved a guess**. A correct result
+on an ambiguous input proves nothing; the question is whether the agent knows it is guessing.
+
+### FIX 4: ambiguous dates
+
+- A client setting, **`DATE_FORMAT`** (`DMY`, `MDY` or `unknown`, default `unknown`), in the rules
+  block of `workflow.py`, read from `.env` when the agent runs.
+- With `DMY` or `MDY`, the extraction prompt tells the AI which order numeric dates use.
+- With `unknown`, a new escalation rule (rule 7) reads the invoice date **as printed in the text**,
+  not the AI's answer (by then it is already YYYY-MM-DD and the ambiguity is gone). Dates labelled
+  "due" are skipped. If the date is `NN/NN/YYYY`, `NN-NN-YYYY` or `NN.NN.YYYY` with both numbers
+  12 or less and not equal, the invoice goes to `needs_review`: "date could be read as day/month
+  or month/day; set DATE_FORMAT for this client".
+- The answer key for invoice_15 was **not** changed, and the grader stays strict. Accepting either
+  date would hide the risk instead of handling it.
+
+### FIX 5: subtotal and tax only if printed (pending PM confirmation)
+
+- The `subtotal` and `tax` descriptions in `schema.py` now say: record them only if the invoice
+  prints them; if it shows only a total, leave both empty and never calculate them.
+- invoice_13's answer key is unchanged (subtotal empty).
+- **This is the proposed rule and is pending PM confirmation.** If the PM prefers subtotal = total
+  for bills like this, change the answer key and the schema wording together.
+
+### Re-run of invoices 03, 13 and 15 (after FIX 4 and FIX 5, `DATE_FORMAT=unknown`)
+
+| Invoice | Before | After | Why |
+|---|---|---|---|
+| invoice_03 | clean_pass | **over_cautious** | `09/03/2026` could be either order, so it goes to review (the AI read it correctly) |
+| invoice_13 | silent_error | **clean_pass** | subtotal and tax now come back empty, matching the key |
+| invoice_15 | silent_error | **caught** | `04/05/2026` goes to review (the AI again guessed 5 April) |
+
+The widened rule (hyphens and dots, checked offline) also flags **invoice_11** (`12-09-2026`).
+It was read correctly in the full run, so it is expected to become over_cautious.
+
+| Measure | After FIX 4 and 5 (slash-only rule) | With the widened rule |
+|---|---|---|
+| **Silent error rate** | **0.0%** | **0.0%** |
+| Escalation rate | 13.3% (03, 15) | 20.0% (03, 11, 15) |
+| Field accuracy | 99.4% | 99.4% |
+
+**These numbers are partly projected.** Only 03, 13 and 15 were re-run after FIX 4 and FIX 5;
+the other 12 invoices are carried over from the full after-fix run, and FIX 5 changes the
+instructions the AI receives on every invoice. A full re-run is the first open item.
+
+### Lessons learned
+
+1. **A correct answer can be luck.** Before trusting a pass on an ambiguous case, ask whether the
+   input actually determines the answer. If it does not, the right behaviour is to escalate.
+2. **Check ambiguity on the source, not on the AI's output.** Once the AI has normalised a date,
+   the evidence that it guessed is gone.
+3. **Some rules are client settings, not code.** Date order is a fact about the client; making it
+   a setting means one value in `.env` turns the escalation off once it is agreed.
+4. **A fix that is never triggered is not tested.** Fixes 2 and 3 have not fired on the current
+   test set, so the set needs invoices designed to trigger them.
+5. **Being over-cautious is the price of zero silent errors.** Escalations rose from 0% to 13–20%;
+   each one costs a person a minute, while a silent error can cost a payment.
+
+---
+
+## 9. Known limitations
 
 - The test invoices are **computer-generated with a perfect text layer**. The set now covers multi-page, multi-language, discounts, freight, credit notes and informal layouts, but every file was produced by a script, not scanned or photographed.
 - Scanned or photographed invoices are **not supported yet**, because OCR isn't included.
 - Accuracy has only been measured with **Gemini** so far. A local model was tried briefly (section 7).
-- **The three Day 3 fixes have not been measured end to end yet** (see section 6).
+- **FIX 4 and FIX 5 have been measured on 3 invoices only** (see section 8); the 0% silent error rate is partly projected until a full re-run.
+- **Fixes 2 and 3 (retry policy and escalation after a retry) have not been tested live**, because no current test invoice triggers a retry.
+- The date rule only recognises numeric dates with a four-digit year. Dates in words (`15 September 2026`) are never ambiguous; two-digit years (`04/05/26`) are not checked.
 - The free Gemini tier allows **20 requests per day per model**, and one full evaluation needs at least 15, so there is room for roughly one run a day.
 
 ---
 
-## 9. Open items
+## 10. Open items
 
-- [ ] **Re-run `evaluate.py` and compare against `reports/evaluation_report_BEFORE_FIX.md`** to see whether the three fixes brought the 20% silent error rate down. Blocked only by the daily Gemini quota.
+- [x] **Re-run `evaluate.py` after Fixes 1–3 and compare against the baseline.** Done 30 September: silent errors 20% → 13.3% (section 8).
+- [ ] **Full 15-invoice re-run after FIX 4 and FIX 5** on fresh quota, with `DATE_FORMAT=unknown`, to replace the projected numbers with measured ones.
+- [ ] **Live test of Fixes 2 and 3** with an invoice designed to force a retry (for example, a vendor name that appears only in a logo) and one whose printed figures genuinely do not add up.
+- [ ] **Build the last 5 invoices for S3**, then evaluate all 20 with per-field accuracy and the top 3 failure causes.
+- [ ] **S2: shadow mode.**
+- [ ] **S2: template and deployment configs.**
+- [ ] **S4: write the internal playbook** (1500+ words) from these notes.
+- [ ] **PM confirmation of the invoice_13 rule** (FIX 5: record subtotal and tax only if printed).
 - [ ] **Run `evaluate.py` with OpenAI** (`AI_PROVIDER=openai`) once an API key with credits is available, and compare the results with Gemini.
-- [ ] **Test scanned or photographed invoices**, which needs OCR. Multi-page, discounts, freight and mixed-language invoices are now covered by invoice_06 to invoice_15.
-- [ ] **Agree the convention for invoice_13**: when no subtotal is printed, should `subtotal` be null or a copy of the total? This decides whether that case is a bug or a preference.
+- [ ] **Test scanned or photographed invoices**, which needs OCR.
 - [x] **Add a `.gitignore` file** so Git never saves `.env` (secret keys), `venv/` (large, and can be rebuilt) or `__pycache__/` (Python's temporary files).

@@ -24,7 +24,14 @@ class Invoice(BaseModel):
     po_number: Optional[str] = Field(default=None, description="Purchase Order (PO) number, if present")
     currency: Optional[str] = Field(default=None, description="3-letter currency code, e.g. USD, INR, EUR")
     line_items: List[LineItem] = Field(default_factory=list, description="Every line item in the invoice table")
-    subtotal: Optional[float] = Field(default=None, description="Subtotal before tax")
+    # --- FIX 5 (schema): subtotal and tax are recorded only when printed. An informal bill with
+    # just a Total used to come back with subtotal = total, a figure the document never showed.
+    subtotal: Optional[float] = Field(
+        default=None,
+        description=("Subtotal before tax. Record this only if the invoice actually prints a "
+                     "subtotal. If the invoice shows only a total, leave subtotal null. Never "
+                     "calculate it or copy the total into it."),
+    )
     # --- FIX 1 (schema): fields for the two things invoices show that used to have nowhere to go.
     # Without them the model had to bend the line items or the subtotal to make the maths work.
     discount: Optional[float] = Field(
@@ -40,5 +47,10 @@ class Invoice(BaseModel):
                      "Record this only if the invoice actually shows such a charge. Otherwise leave "
                      "it null. Never invent or calculate it, and never put it in line_items."),
     )
-    tax: Optional[float] = Field(default=None, description="Total tax amount (GST/VAT etc.)")
+    tax: Optional[float] = Field(
+        default=None,
+        description=("Total tax amount (GST/VAT etc.). Record this only if the invoice actually "
+                     "prints a tax amount. If the invoice shows only a total, leave tax null. "
+                     "Never calculate it or assume it is 0."),
+    )
     total: Optional[float] = Field(default=None, description="Final amount due")

@@ -44,6 +44,27 @@ STATUS_NEEDS_REVIEW = "needs_review"
 MONEY_TOLERANCE = 0.01  # amounts within this much of each other count as equal
 REQUIRED_FIELDS = ("vendor_name", "invoice_date", "total")  # used by rule 1
 
+# FIX 4 (ambiguous dates) - the client's date format, used by rule 7 and by the extract prompt.
+#   "DMY"     - numeric dates are day/month/year   (04/05/2026 = 4 May 2026)
+#   "MDY"     - numeric dates are month/day/year   (04/05/2026 = 5 April 2026)
+#   "unknown" - not agreed with the client yet: the AI is given no hint, and any invoice whose
+#               date could be read either way is sent for review (rule 7)
+# Set DATE_FORMAT in .env per client; this is the value used when it is not set.
+DATE_FORMAT_DEFAULT = "unknown"
+DATE_FORMAT_HINTS = {
+    "DMY": "Numeric dates on this invoice are day/month/year: 04/05/2026 means 4 May 2026.",
+    "MDY": "Numeric dates on this invoice are month/day/year: 04/05/2026 means 5 April 2026.",
+}
+
+
+def date_format() -> str:
+    """The client's date format from .env, read at call time (see the note above RESULTS_DIR)."""
+    value = (os.getenv("DATE_FORMAT") or DATE_FORMAT_DEFAULT).strip()
+    value = "unknown" if value.lower() == "unknown" else value.upper()
+    if value not in (*DATE_FORMAT_HINTS, "unknown"):
+        raise ValueError(f"DATE_FORMAT must be DMY, MDY or unknown, got '{value}'")
+    return value
+
 
 def is_blank(value) -> bool:
     """True for None and for text that is empty or only spaces."""
@@ -123,6 +144,37 @@ def rule_missing_currency(invoice, state):
     return "currency is missing" if is_blank(invoice.currency) else None
 
 
+# FIX 4 (ambiguous dates) - Rule 7: the printed date could mean two different days.
+# 04/05/2026 is 4 May or 5 April, and nothing in the numbers says which. Without DATE_FORMAT
+# the AI can only guess, and the same invoice came back as 4 May in one run and 5 April in the
+# next, auto approved both times. So when the format is unknown, a human decides.
+# The check reads the date as PRINTED in the invoice text, never the AI's answer, because the
+# AI has already turned the date into YYYY-MM-DD and the ambiguity is gone by then.
+# NN/NN/YYYY, NN-NN-YYYY or NN.NN.YYYY. The same separator must appear twice (\2), so a
+# reference like "26-27/0192" is never mistaken for a date.
+NUMERIC_DATE = re.compile(r"\b(\d{1,2})([/.-])(\d{1,2})\2(\d{4})\b")
+DUE_DATE_LABEL = re.compile(r"\bdue\b", re.I)  # a due date is not the invoice date
+
+
+def printed_invoice_date(text):
+    """The first numeric date in the text that is not labelled as a due date, as (a, b)."""
+    for match in NUMERIC_DATE.finditer(text):
+        line_start = text.rfind("\n", 0, match.start()) + 1
+        label = text[line_start:match.start()][-30:]  # the words just before the date
+        if not DUE_DATE_LABEL.search(label):
+            return int(match.group(1)), int(match.group(3))
+    return None
+
+
+def rule_ambiguous_date(invoice, state):
+    if date_format() != "unknown":
+        return None  # the client's format is known, and the prompt told the AI which it is
+    printed = printed_invoice_date(state.get("raw_text") or "")
+    if printed and printed[0] <= 12 and printed[1] <= 12 and printed[0] != printed[1]:
+        return "date could be read as day/month or month/day; set DATE_FORMAT for this client"
+    return None
+
+
 ESCALATION_RULES = (
     rule_missing_required_field,
     rule_totals_do_not_add_up,
@@ -130,6 +182,7 @@ ESCALATION_RULES = (
     rule_retries_exhausted,
     rule_missing_currency,
     rule_answer_changed_after_retry,
+    rule_ambiguous_date,
 )
 
 
@@ -213,8 +266,13 @@ def extract(state: InvoiceState) -> InvoiceState:
         "You are an invoice data extraction assistant. Extract the fields from the "
         "invoice text below. Use null for anything not present; never invent values. "
         "Amounts must be plain numbers without currency symbols or commas.\n\n"
-        f"INVOICE TEXT:\n{state['raw_text']}"
     )
+    # FIX 4 (ambiguous dates): when the client's date format is known, say so. When it is
+    # "unknown" nothing is added, and rule 7 escalates any date that could be read both ways.
+    hint = DATE_FORMAT_HINTS.get(date_format())
+    if hint:
+        prompt += hint + "\n\n"
+    prompt += f"INVOICE TEXT:\n{state['raw_text']}"
     # On a retry, tell the model what it missed last time (extraction problems only, never sums)
     if state.get("errors"):
         prompt += "\n\nYour previous extraction had these problems, fix them:\n- " + "\n- ".join(state["errors"])
