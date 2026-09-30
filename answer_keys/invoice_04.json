@@ -1,0 +1,74 @@
+{
+  "vendor_name": "Sharma Electricals & Hardware",
+  "invoice_number": "SEH/26-27/0192",
+  "invoice_date": "2026-09-05",
+  "po_number": "PO/ENG/4471",
+  "currency": "INR",
+  "line_items": [
+    {
+      "description": "LED Panel Light 18W",
+      "quantity": 24.0,
+      "unit_price": 650.0,
+      "amount": 15600.0
+    },
+    {
+      "description": "Copper Wire 2.5 sq mm (90 m coil)",
+      "quantity": 6.0,
+      "unit_price": 2350.0,
+      "amount": 14100.0
+    },
+    {
+      "description": "Modular Switch 6A",
+      "quantity": 40.0,
+      "unit_price": 85.0,
+      "amount": 3400.0
+    },
+    {
+      "description": "MCB 32A Double Pole",
+      "quantity": 8.0,
+      "unit_price": 780.0,
+      "amount": 6240.0
+    },
+    {
+      "description": "Extension Board 4-Socket",
+      "quantity": 15.0,
+      "unit_price": 420.0,
+      "amount": 6300.0
+    },
+    {
+      "description": "PVC Conduit Pipe 25mm (3 m)",
+      "quantity": 50.0,
+      "unit_price": 95.0,
+      "amount": 4750.0
+    },
+    {
+      "description": "Ceiling Fan 1200mm",
+      "quantity": 6.0,
+      "unit_price": 2850.0,
+      "amount": 17100.0
+    },
+    {
+      "description": "Exhaust Fan 250mm",
+      "quantity": 4.0,
+      "unit_price": 1450.0,
+      "amount": 5800.0
+    },
+    {
+      "description": "Insulation Tape (Pack of 10)",
+      "quantity": 12.0,
+      "unit_price": 180.0,
+      "amount": 2160.0
+    },
+    {
+      "description": "Distribution Board 8-Way",
+      "quantity": 2.0,
+      "unit_price": 3200.0,
+      "amount": 6400.0
+    }
+  ],
+  "subtotal": 81850.0,
+  "discount": null,
+  "shipping": null,
+  "tax": 14733.0,
+  "total": 96583.0
+}

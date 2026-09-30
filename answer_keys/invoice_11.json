@@ -1,0 +1,39 @@
+{
+  "vendor_name": "Verma Pustak Bhandar",
+  "invoice_number": "VPB-2026-77",
+  "invoice_date": "2026-09-12",
+  "po_number": "PO-VPB-15",
+  "currency": "INR",
+  "line_items": [
+    {
+      "description": "रजिस्टर A4 (200 पेज)",
+      "quantity": 25.0,
+      "unit_price": 85.0,
+      "amount": 2125.0
+    },
+    {
+      "description": "बॉल पेन नीला (Box of 20)",
+      "quantity": 10.0,
+      "unit_price": 160.0,
+      "amount": 1600.0
+    },
+    {
+      "description": "फाइल कवर plastic",
+      "quantity": 40.0,
+      "unit_price": 45.0,
+      "amount": 1800.0
+    },
+    {
+      "description": "नोटबुक 100 पेज",
+      "quantity": 60.0,
+      "unit_price": 32.0,
+      "amount": 1920.0
+    }
+  ],
+  "subtotal": 7445.0,
+  "discount": null,
+  "shipping": null,
+  "tax": 1340.1,
+  "total": 8785.1,
+  "notes": "The vendor name is printed twice: 'वर्मा पुस्तक भंडार' in Devanagari and 'Verma Pustak Bhandar' in English. The English form is recorded here; a client may want the Devanagari form instead. Item descriptions are kept exactly as printed, mixing both scripts. The date 12-09-2026 is day-month-year (Indian convention) -> 2026-09-12."
+}

@@ -1,0 +1,39 @@
+{
+  "vendor_name": "Riverside Tools & Machinery",
+  "invoice_number": "RTM-88214",
+  "invoice_date": "2026-09-11",
+  "po_number": "PO-RS-9912",
+  "currency": "USD",
+  "line_items": [
+    {
+      "description": "Cordless Drill 18V",
+      "quantity": 8.0,
+      "unit_price": 129.0,
+      "amount": 1032.0
+    },
+    {
+      "description": "Angle Grinder 5in",
+      "quantity": 5.0,
+      "unit_price": 89.5,
+      "amount": 447.5
+    },
+    {
+      "description": "Tool Chest 5-Drawer",
+      "quantity": 2.0,
+      "unit_price": 415.0,
+      "amount": 830.0
+    },
+    {
+      "description": "Socket Set 120-Piece",
+      "quantity": 6.0,
+      "unit_price": 74.25,
+      "amount": 445.5
+    }
+  ],
+  "subtotal": 2755.0,
+  "discount": null,
+  "shipping": 185.0,
+  "tax": 192.85,
+  "total": 3132.85,
+  "notes": "A freight charge of 185.00 is added after the subtotal. It is recorded in the shipping field, so subtotal (2,755.00) + tax (192.85) + shipping equals the total (3,132.85). Tax is charged on the subtotal only, not on the freight. The freight must NOT appear as a line item. A client may instead want it captured as a line item, in which case the line_items count would be 5 rather than 4."
+}

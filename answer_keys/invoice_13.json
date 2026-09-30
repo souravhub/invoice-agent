@@ -1,0 +1,39 @@
+{
+  "vendor_name": "Ravi Electric Works",
+  "invoice_number": null,
+  "invoice_date": "2026-09-20",
+  "po_number": null,
+  "currency": "INR",
+  "line_items": [
+    {
+      "description": "Wiring repair - shop front",
+      "quantity": 1.0,
+      "unit_price": 2400.0,
+      "amount": 2400.0
+    },
+    {
+      "description": "MCB replacement (32A)",
+      "quantity": 2.0,
+      "unit_price": 780.0,
+      "amount": 1560.0
+    },
+    {
+      "description": "Tube light fitting",
+      "quantity": 3.0,
+      "unit_price": 450.0,
+      "amount": 1350.0
+    },
+    {
+      "description": "Labour (2 days)",
+      "quantity": 1.0,
+      "unit_price": 1200.0,
+      "amount": 1200.0
+    }
+  ],
+  "subtotal": null,
+  "discount": null,
+  "shipping": null,
+  "tax": null,
+  "total": 6510.0,
+  "notes": "A small informal bill. No invoice number and no PO number are printed, so both are null; an agent that invents either is wrong. No subtotal or tax line is printed either, so subtotal and tax are null and only the printed total (6,510.00) is recorded. A client may prefer subtotal = total and tax = 0 in this situation. Currency is INR, shown only as 'Rs.'."
+}

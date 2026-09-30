@@ -1,0 +1,32 @@
+{
+  "vendor_name": "Brightline Design Studio Ltd",
+  "invoice_number": "BDS-0042",
+  "invoice_date": "2026-09-12",
+  "po_number": "BL-PO-2231",
+  "currency": "GBP",
+  "line_items": [
+    {
+      "description": "Brand identity design",
+      "quantity": 1.0,
+      "unit_price": 2400.0,
+      "amount": 2400.0
+    },
+    {
+      "description": "Website mockups (per page)",
+      "quantity": 5.0,
+      "unit_price": 180.0,
+      "amount": 900.0
+    },
+    {
+      "description": "Revision rounds",
+      "quantity": 3.0,
+      "unit_price": 75.0,
+      "amount": 225.0
+    }
+  ],
+  "subtotal": 3525.0,
+  "discount": null,
+  "shipping": null,
+  "tax": 705.0,
+  "total": 4230.0
+}

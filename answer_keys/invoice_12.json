@@ -1,0 +1,33 @@
+{
+  "vendor_name": "Sunrise Dairy Supplies",
+  "invoice_number": "SDS-401",
+  "invoice_date": "2026-09-14",
+  "po_number": "PO-SD-77",
+  "currency": "INR",
+  "line_items": [
+    {
+      "description": "Toned Milk 500ml (Crate of 24)",
+      "quantity": 30.0,
+      "unit_price": 660.0,
+      "amount": 19800.0
+    },
+    {
+      "description": "Curd 400g (Pack of 12)",
+      "quantity": 20.0,
+      "unit_price": 384.0,
+      "amount": 7680.0
+    },
+    {
+      "description": "Paneer 200g",
+      "quantity": 25.0,
+      "unit_price": 96.0,
+      "amount": 2400.0
+    }
+  ],
+  "subtotal": 29880.0,
+  "discount": null,
+  "shipping": null,
+  "tax": 1494.0,
+  "total": 31374.0,
+  "notes": "Two unrelated invoices were scanned into one PDF: Sunrise Dairy Supplies (SDS-401) on page 1 and Golden Harvest Grains (GHG-2211, total 19,372.50) on page 2. This answer key covers ONLY the first invoice. An agent that merges the two, or returns the second, counts as wrong. In production such a file should be split before extraction; a client may instead expect a list of two invoices."
+}

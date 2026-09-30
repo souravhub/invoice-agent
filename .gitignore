@@ -1,0 +1,11 @@
+# Secret keys and private settings
+.env
+
+# Virtual environment (large; rebuild with: python -m venv venv + pip install -r requirements.txt)
+venv/
+
+# Python's temporary compiled files
+__pycache__/
+
+# Output from evaluate.py (recreated on every run)
+results/

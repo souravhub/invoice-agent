@@ -1,0 +1,33 @@
+{
+  "vendor_name": "Hoffmann Bürotechnik GmbH",
+  "invoice_number": "2026-RE-4417",
+  "invoice_date": "2026-09-15",
+  "po_number": "BE-2211",
+  "currency": "EUR",
+  "line_items": [
+    {
+      "description": "Laserdrucker HL-3280",
+      "quantity": 3.0,
+      "unit_price": 289.0,
+      "amount": 867.0
+    },
+    {
+      "description": "Tonerkartusche schwarz",
+      "quantity": 12.0,
+      "unit_price": 68.5,
+      "amount": 822.0
+    },
+    {
+      "description": "Aktenvernichter P-4",
+      "quantity": 2.0,
+      "unit_price": 154.0,
+      "amount": 308.0
+    }
+  ],
+  "subtotal": 1997.0,
+  "discount": null,
+  "shipping": null,
+  "tax": 379.43,
+  "total": 2376.43,
+  "notes": "Everything is in German. 'Rechnungsnummer' is the invoice number, 'Bestellnummer' (order number) is treated as the PO number, 'Zwischensumme' is the subtotal, 'MwSt.' is the tax and 'Summe' is the total. The date 15.09.2026 is day.month.year -> 2026-09-15. Amounts use German formatting (1.997,00 means one thousand nine hundred ninety-seven), which must not be read as 1.997. Item descriptions are kept in German as printed; a client may want them translated."
+}
