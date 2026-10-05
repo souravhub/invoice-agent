@@ -1,0 +1,21 @@
+case_id,file,test,expected,reason,capability
+TC01,TC01_valid_basic.pdf,Valid basic invoice,auto_approved,All required fields and arithmetic are correct.,Current rule
+TC02,TC02_missing_vendor.pdf,Missing vendor,needs_review,vendor_name is required.,Current rule
+TC03,TC03_missing_date.pdf,Missing invoice date,needs_review,invoice_date is required.,Current rule
+TC04,TC04_missing_total.pdf,Missing total,needs_review,total is required.,Current rule
+TC05,TC05_wrong_subtotal.pdf,Wrong subtotal,needs_review,"Line items sum to 55,000 but printed subtotal is 56,000.",Current rule
+TC06,TC06_wrong_total.pdf,Wrong total,needs_review,"Subtotal + tax is 64,900 but printed total is 67,000.",Current rule
+TC07,TC07_no_line_items.pdf,No line items,needs_review,The invoice has totals but no item table.,Current rule
+TC08,TC08_missing_currency.pdf,Missing currency,needs_review,Currency is required by escalation rule.,Current rule
+TC09,TC09_ambiguous_date.pdf,Ambiguous numeric date,needs_review when DATE_FORMAT=unknown,04/05/2026 can be DMY or MDY.,Current rule
+TC10,TC10_valid_discount.pdf,Valid discount math,auto_approved,"55,000 - 2,000 = 53,000; total arithmetic is correct.",Current rule
+TC11,TC11_valid_shipping.pdf,Valid shipping math,auto_approved,Subtotal + tax + shipping matches total.,Current rule
+TC12,TC12_wrong_discount_math.pdf,Wrong discount/subtotal math,needs_review,"55,000 - 2,000 should be 53,000, not 54,000.",Current rule
+TC13,TC13_wrong_shipping_total.pdf,Shipping omitted from total,needs_review,"55,000 + 9,900 + 500 should be 65,400.",Current rule
+TC14,TC14_multi_page_valid.pdf,Multi-page valid invoice,auto_approved,Tests extraction when line items span pages.,Current rule
+TC15,TC15_scanned_image_only.pdf,Scanned/image-only invoice,expected failure or needs_review,Current loader uses text extraction and has no OCR.,Product gap: OCR
+TC16,TC16_two_invoices_one_pdf.pdf,Two unrelated invoices in one PDF,should require split/review,A single-file upload contains two invoices.,Product gap: document splitting
+TC17,TC17_duplicate_A.pdf,Duplicate test - first copy,auto_approved,First occurrence is a valid invoice.,Baseline for duplicate test
+TC18,TC18_duplicate_B.pdf,Duplicate test - second copy,desired needs_review,"Same vendor, invoice number and values as TC17. Current stateless agent may approve both.",Product gap: duplicate detection
+TC19,TC19_credit_note.pdf,Credit note with negative values,review / policy-dependent,Tests whether the product distinguishes credit notes from normal invoices.,Product gap: document type policy
+TC20,TC20_eur_international.pdf,International EUR invoice,auto_approved,Tests non-INR currency and alternate vendor wording.,Current rule
