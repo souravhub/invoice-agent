@@ -9,7 +9,9 @@ sharing one state object. Some edges are conditional (the agent "decides").
                             +-(errors, retries left)-+
 
 The last step, decide, turns the checks into a verdict for each invoice:
-"auto_approved" (safe to process) or "needs_review" (a human must look at it).
+"auto_approved" (passed the configured checks) or "needs_review" (a human must look at it).
+The internal auto_approved name is retained for evaluation compatibility; it is not payment
+authorization or proof that the invoice is authentic.
 
 Only genuine extraction failures are retried. Figures that do not add up are reported
 for human review and never sent back to the AI (see FIX 2 near the validate step).
@@ -23,7 +25,7 @@ import pdfplumber
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, START, END
 
-from schema import Invoice
+from .schema import Invoice
 
 MAX_RETRIES = 2
 # Note: "gemini-2.5-flash" was the old default but now returns 404 (retired), so the fallback
@@ -81,7 +83,7 @@ def money_errors(invoice) -> List[str]:
     return errors
 
 
-# Rule 1: an invoice cannot be processed without knowing who sent it, when, and how much.
+# Rule 1: an invoice cannot pass the checks without knowing who sent it, when, and how much.
 def rule_missing_required_field(invoice, state):
     missing = [name for name in REQUIRED_FIELDS if is_blank(getattr(invoice, name))]
     return "missing required field(s): " + ", ".join(missing) if missing else None
@@ -137,7 +139,8 @@ ESCALATION_RULES = (
 # These three helpers are shared by main.py and evaluate.py so both name their output files
 # the same way. Read at call time, not import time: main.py imports this module before
 # load_dotenv() runs, so anything read at the top of the file would miss the .env settings.
-RESULTS_DIR = Path("results")
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+RESULTS_DIR = PROJECT_ROOT / "results"
 
 
 def provider_and_model():

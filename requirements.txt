@@ -1,8 +1,0 @@
-langchain>=1.0
-langchain-openai>=1.0
-langchain-google-genai
-langgraph>=1.0
-pdfplumber
-pydantic>=2
-python-dotenv
-reportlab

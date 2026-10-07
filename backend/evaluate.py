@@ -15,13 +15,14 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from workflow import STATUS_AUTO_APPROVED, build_graph, provider_and_model, run_dir, run_slug
+from .agent.workflow import STATUS_AUTO_APPROVED, build_graph, provider_and_model, run_dir, run_slug
 
-load_dotenv()  # reads AI_PROVIDER, AI_MODEL and the API keys from .env
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+load_dotenv(PROJECT_ROOT / "backend" / ".env")
 
-INVOICES_DIR = Path("invoices")
-KEYS_DIR = Path("answer_keys")
-RESULTS_DIR = Path("results")
+INVOICES_DIR = PROJECT_ROOT / "invoices"
+KEYS_DIR = PROJECT_ROOT / "answer_keys"
+RESULTS_DIR = PROJECT_ROOT / "results"
 DELAY_SECONDS = 5           # pause between invoices to stay under free-tier rate limits
 RATE_LIMIT_WAIT = 60        # fallback wait before retrying an invoice that hit a rate limit
 RATE_LIMIT_RETRIES = 3      # how many times to retry such an invoice
@@ -61,8 +62,8 @@ NUMBER_FIELDS = {"subtotal", "discount", "shipping", "tax", "total"}
 # Every invoice lands in exactly one of these four buckets: what the agent decided
 # (auto_approved / needs_review) crossed with whether it was actually right.
 BUCKETS = {
-    "clean_pass": "Auto approved and every field correct. The ideal outcome: no human needed.",
-    "silent_error": "Auto approved but at least one field wrong. A wrong result passed off as confident.",
+    "clean_pass": "Passed configured checks and every field was correct. No human check was requested.",
+    "silent_error": "Passed configured checks but at least one field was wrong. A wrong result looked confident.",
     "caught": "Sent for review and at least one field wrong. The agent caught its own mistake.",
     "over_cautious": "Sent for review but actually every field was correct. Safe, but wastes a human's time.",
 }
@@ -231,8 +232,9 @@ def build_report(rows, not_run=0):
            "refusing with rate-limit errors), so this report does not cover the whole test set."]
           if not_run else []), "",
         "## How to read this report", "",
-        "The agent gives every invoice a verdict: **auto_approved** (safe to process) or "
-        "**needs_review** (a human must look at it). Accuracy alone does not tell you whether "
+        "The agent gives every invoice a verdict: **auto_approved** (passed its configured checks; "
+        "not payment authorization) or **needs_review** (a human must look at it). Accuracy alone "
+        "does not tell you whether "
         "those verdicts can be trusted, so each invoice is also placed in one of four buckets.",
         "",
         "**A silent error is a wrong result that the agent passed on as confident.** Nobody is "

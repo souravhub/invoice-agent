@@ -20,7 +20,7 @@ PDF -> load_pdf (read the text) -> extract (AI fills in a form) -> validate (che
 ```
 
 1. **load_pdf** pulls the plain text out of the PDF. No AI is used here.
-2. **extract** sends the text to the AI, which must fill in a fixed form defined in `schema.py`. The AI can't reply in free text; it has to return data in exactly this shape.
+2. **extract** sends the text to the AI, which must fill in a fixed form defined in `backend/agent/schema.py`. The AI can't reply in free text; it has to return data in exactly this shape.
 3. **validate** uses plain code rules, not AI, and sorts what it finds into two kinds:
    - **missing information** (no vendor, no total, no line items): the AI is asked to try again, up to 2 more times
    - **figures that do not add up** (`items - discount = subtotal`, `subtotal + tax + shipping = total`): reported, never sent back to the AI
@@ -30,18 +30,17 @@ PDF -> load_pdf (read the text) -> extract (AI fills in a form) -> validate (che
 
 | File / folder | Purpose |
 |---|---|
-| `schema.py` | The form the AI must fill in: which fields we want and what each one means |
-| `workflow.py` | The pipeline steps, how they connect, and which AI provider is used |
-| `main.py` | Runs the pipeline on one PDF and saves the result as JSON |
-| `peek_pdf.py` | Prints the text pulled out of a PDF (no AI; useful for debugging) |
+| `backend/agent/schema.py` | The form the AI must fill in: which fields we want and what each one means |
+| `backend/agent/workflow.py` | The pipeline steps, how they connect, and which AI provider is used |
+| `backend/peek_pdf.py` | Prints the text pulled out of a PDF (no AI; useful for debugging) |
 | `make_sample_invoice.py` | Creates the first sample invoice |
 | `make_test_invoices.py` | Creates the other test invoices and their answer keys |
-| `evaluate.py` | Runs every test invoice, scores the accuracy and the escalation quality |
+| `backend/evaluate.py` | Runs every test invoice, scores the accuracy and the escalation quality |
 | `invoices/` | 15 test invoice PDFs (`invoice_01` to `invoice_15`) |
 | `answer_keys/` | The correct answers for each test invoice, plus `notes` on judgment calls |
 | `results/` | Reports, and the AI's raw output per provider and model (e.g. `gemini_gemini-3-flash-preview/`) |
-| `.env` | Private settings and API keys. **Never share or commit this file.** |
-| `requirements.txt` | The Python packages the project needs |
+| `backend/.env` | Private settings and API keys. **Never share or commit this file.** |
+| `backend/requirements.txt` | The Python packages the backend needs |
 
 ---
 
@@ -57,10 +56,10 @@ PDF -> load_pdf (read the text) -> extract (AI fills in a form) -> validate (che
 
 ```powershell
 python -m venv venv                                            # 1. create a private package folder for this project
-.\venv\Scripts\python.exe -m pip install -r requirements.txt   # 2. install the packages into it
+.\venv\Scripts\python.exe -m pip install -r backend\requirements.txt   # 2. install the packages into it
 ```
 
-3. Create a file named **`.env`** in the project folder with these settings:
+3. Copy `backend/.env.example` to **`backend/.env`** and add these settings:
 
 | Setting | Meaning |
 |---|---|
@@ -74,9 +73,8 @@ python -m venv venv                                            # 1. create a pri
 ### Everyday commands
 
 ```powershell
-.\venv\Scripts\python.exe peek_pdf.py                       # see the text the AI will receive
-.\venv\Scripts\python.exe main.py invoices\invoice_03.pdf   # extract one invoice
-.\venv\Scripts\python.exe evaluate.py                       # score accuracy on all test invoices
+.\venv\Scripts\python.exe -m backend.peek_pdf                       # see the text the AI will receive
+.\venv\Scripts\python.exe -m backend.evaluate                       # score accuracy on all test invoices
 ```
 
 **Tip:** run `.\venv\Scripts\Activate.ps1` once per terminal. After that, plain `python` works in that terminal.
@@ -97,10 +95,10 @@ python -m venv venv                                            # 1. create a pri
 ## 3. Demo script (about 5 minutes)
 
 1. **Show the input:** open `invoices/invoice_04.pdf`, a busy invoice with 10 line items and tax split into two lines.
-2. **Show what the AI receives:** run `peek_pdf.py`. The table becomes plain lines of text, with no columns or layout.
-3. **Extract one invoice:** run `main.py invoices\invoice_04.pdf`. It shows clean JSON with all 10 items, the combined tax, and "Validation passed."
-4. **Show the accuracy score:** run `evaluate.py`. It shows the per-field accuracy table and the overall score.
-5. **Show flexibility:** change `AI_PROVIDER` in `.env` to switch AI vendors without changing any code.
+2. **Show what the AI receives:** run `python -m backend.peek_pdf`. The table becomes plain lines of text, with no columns or layout.
+3. **Check one invoice:** upload `invoices/invoice_04.pdf` in the web app. It shows clean structured data, the combined tax, and the configured-check status.
+4. **Show the accuracy score:** run `python -m backend.evaluate`. It shows the per-field accuracy table and the overall score.
+5. **Show flexibility:** change `AI_PROVIDER` in `backend/.env` to switch AI vendors without changing any code.
 
 ---
 
@@ -111,10 +109,10 @@ python -m venv venv                                            # 1. create a pri
 - Set up the Python environment and installed the project packages into a virtual environment.
 - Made the AI provider **switchable** through `.env` (`AI_PROVIDER`, `GEMINI_API_KEY`, `AI_MODEL`):
   - added the `langchain-google-genai` package
-  - added a `get_llm()` function in `workflow.py` that creates the right AI connection
+  - added a `get_llm()` function in `backend/agent/workflow.py` that creates the right AI connection
   - this means the project isn't tied to a single AI vendor or its billing
-- **Fixed a hidden bug:** `main.py` loads `.env` *after* it loads `workflow.py`. The model setting was being read before `.env` was loaded, so it was silently ignored. Settings are now read only when the AI is actually called.
-- Created `peek_pdf.py` to inspect the text pulled out of a PDF.
+- **Fixed a hidden bug in the original runner:** settings are read only when the AI is actually called, so environment configuration is applied correctly.
+- Created `backend/peek_pdf.py` to inspect the text pulled out of a PDF.
 - Ran the first full extraction on the sample invoice.
 
 ### Observations
@@ -149,7 +147,7 @@ python -m venv venv                                            # 1. create a pri
 ### Steps completed
 
 - Built a 5-invoice test set with answer keys.
-- Built `evaluate.py` to score accuracy automatically.
+- Built `backend/evaluate.py` to score accuracy automatically.
 - Checked that the grader catches wrong answers.
 - Ran the full evaluation on Gemini.
 
@@ -172,7 +170,7 @@ python -m venv venv                                            # 1. create a pri
 - The answer key for `invoice_01` was taken from the AI's output and checked by hand against the PDF. Future answer keys should be created independently of the AI being tested.
 - The `invoice_05` answer key treats **"Your reference"** as the PO number. This is a judgment call, not a clear fact. If the agent ever disagrees, check whether the agent or the answer key is wrong. In real projects, agree on these field definitions with the client before testing.
 
-### Scoring rules in evaluate.py
+### Scoring rules in backend/evaluate.py
 
 - These rules are forgiving about small differences that don't matter, and strict about dates and money.
 
@@ -249,7 +247,7 @@ Every invoice now comes back with three extra pieces of information:
 | `attempts` | how many times the AI was asked |
 
 The rules that send an invoice for review all sit in **one clearly marked block near the top of
-`workflow.py`**, because different clients will want different rules:
+`backend/agent/workflow.py`**, because different clients will want different rules:
 
 | Rule | Sends for review when |
 |---|---|
@@ -338,7 +336,7 @@ satisfied honestly, asking a model to satisfy it invites invention.
 
 ### The three fixes
 
-**Fix 1 - give the truth somewhere to live (`schema.py` and the maths).**
+**Fix 1 - give the truth somewhere to live (`backend/agent/schema.py` and the maths).**
 Optional `discount` and `shipping` fields were added, with descriptions telling the model to
 record them only when the invoice shows them and never to invent them. The arithmetic became
 `items - discount = subtotal` and `subtotal + tax + shipping = total`.
@@ -471,7 +469,7 @@ do real work: they are what makes a cheaper or weaker model usable at all.
    because a full test run takes over an hour.
 3. **A weak model is safe if the safety net is good.** Judge a model by its silent errors, not
    only by its field accuracy.
-4. **Re-adding Ollama later is roughly ten lines** in `workflow.py`: a `ChatOllama` branch with
+4. **Re-adding Ollama later is roughly ten lines** in `backend/agent/workflow.py`: a `ChatOllama` branch with
    `temperature=0`, `num_ctx=8192` (the default context window is smaller and would silently cut
    off a long invoice) and a long client timeout, plus the `langchain-ollama` package. The
    per-model result folders are still in place, so a local model's results would stay separate.
@@ -488,8 +486,8 @@ do real work: they are what makes a cheaper or weaker model usable at all.
 
 ## 9. Open items
 
-- [ ] **Re-run `evaluate.py` and compare against `reports/evaluation_report_BEFORE_FIX.md`** to see whether the three fixes brought the 20% silent error rate down. Blocked only by the daily Gemini quota.
-- [ ] **Run `evaluate.py` with OpenAI** (`AI_PROVIDER=openai`) once an API key with credits is available, and compare the results with Gemini.
+- [ ] **Re-run `python -m backend.evaluate` and compare against `reports/evaluation_report_BEFORE_FIX.md`** to see whether the three fixes brought the 20% silent error rate down. Blocked only by the daily Gemini quota.
+- [ ] **Run `python -m backend.evaluate` with OpenAI** (`AI_PROVIDER=openai`) once an API key with credits is available, and compare the results with Gemini.
 - [ ] **Test scanned or photographed invoices**, which needs OCR. Multi-page, discounts, freight and mixed-language invoices are now covered by invoice_06 to invoice_15.
 - [ ] **Agree the convention for invoice_13**: when no subtotal is printed, should `subtotal` be null or a copy of the total? This decides whether that case is a bug or a preference.
 - [x] **Add a `.gitignore` file** so Git never saves `.env` (secret keys), `venv/` (large, and can be rebuilt) or `__pycache__/` (Python's temporary files).

@@ -1,11 +1,21 @@
-# Secret keys and private settings
+# Secret keys and private settings (examples remain tracked)
 .env
+**/.env
 
 # Virtual environment (large; rebuild with: python -m venv venv + pip install -r requirements.txt)
 venv/
 
 # Python's temporary compiled files
 __pycache__/
+*.py[cod]
+.pytest_cache/
 
 # Output from evaluate.py (recreated on every run)
 results/
+
+# Frontend build and local dependency artifacts
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env*.local
+*.tsbuildinfo
