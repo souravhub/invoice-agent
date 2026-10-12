@@ -1,44 +1,105 @@
-# Invoice Agent Web App
+# Invoice Agent — Complete Project Guide
 
-A local Next.js and FastAPI application that extracts structured data from invoice and purchase-order
-PDFs, applies deterministic validation and two-way matching checks, and explains whether each result
-needs human review. Upload one invoice PDF, one ZIP batch containing up to 10 invoices, or save a PO
-in the dedicated purchase-order register.
+Invoice Agent is a full-stack web application for extracting structured data from invoice and purchase-order PDFs, validating the extraction, and matching invoices against saved purchase orders.
 
-> "Passed configured checks" is not payment authorization and does not prove that an invoice or
-> vendor is authentic.
+It uses a Next.js frontend, a FastAPI backend, Firebase Authentication for Google sign-in, Firebase Admin/Firestore for private workspace data, and a configurable OpenAI or Gemini extraction provider.
 
-## Structure
+> A result marked `auto_approved` means the configured checks passed. It is not payment authorization, proof of authenticity, or confirmation that goods were received.
+
+## Contents
+
+- [Features](#features)
+- [Architecture](#architecture)
+- [Folder structure](#folder-structure)
+- [Requirements](#requirements)
+- [Initial setup](#initial-setup)
+- [Firebase setup](#firebase-setup)
+- [Configuration](#configuration)
+- [Run locally](#run-locally)
+- [How to use the application](#how-to-use-the-application)
+- [API reference](#api-reference)
+- [Validation and matching](#validation-and-matching)
+- [ZIP upload policy](#zip-upload-policy)
+- [Testing and verification](#testing-and-verification)
+- [Troubleshooting](#troubleshooting)
+- [Security notes](#security-notes)
+
+## Features
+
+- Google sign-in through Firebase Authentication.
+- Single invoice PDF extraction and validation.
+- Secure ZIP batch processing for up to 10 invoice PDFs.
+- Purchase-order PDF extraction and private PO register.
+- Deterministic two-way invoice-to-PO matching.
+- Dashboard with invoice, PO, review, and match-health metrics.
+- Invoice analyzer with CSV and JSON export.
+- FastAPI OpenAPI documentation at `/docs`.
+- Server-side Firestore access: the browser never reads or writes Firestore directly.
+
+## Architecture
+
+```text
+Browser (Next.js on :3000)
+  │
+  ├─ Firebase Authentication: Google sign-in and Firebase ID token
+  │
+  └─ HTTP API requests with Bearer ID token
+       │
+       ▼
+FastAPI (on :8000)
+  ├─ verifies Firebase ID token with Firebase Admin
+  ├─ reads/writes Firestore for the signed-in user
+  ├─ extracts invoice/PO data through the configured AI provider
+  └─ runs deterministic checks and two-way matching
+       │
+       ├─ Firebase Admin → Firestore
+       └─ OpenAI or Gemini → structured extraction
+```
+
+The frontend retains Firebase only for authentication. All saved invoices, analyses, purchase orders, matching lookups, updates, and deletions go through FastAPI.
+
+## Folder structure
 
 ```text
 invoice-agent/
-|-- frontend/                 Next.js, TypeScript, Tailwind CSS
-|   |-- src/
-|   |   |-- app/              App Router pages and global styles
-|   |   `-- lib/              API, Firebase Auth, and CSV utilities
-|   |-- .env.example          Public backend URL
-|   `-- package.json
-|-- backend/                  FastAPI application
-|   |-- app/
-|   |   |-- api/              Processing/workspace routes and router composition
-|   |   |-- core/             Configuration and Firebase infrastructure
-|   |   |-- models/           Pydantic API contracts
-|   |   |-- services/         Invoice, matching, and archive services
-|   |   |-- agent/            LangGraph workflow and domain schema
-|   |   `-- main.py           FastAPI bootstrap and middleware
-|   |-- scripts/              Evaluation and PDF inspection utilities
-|   |-- tests/                API, security, and business-rule tests
-|   |-- requirements.txt
-|   `-- .env.example          Private provider configuration
-|-- invoices/                 Generated test PDFs
-|-- answer_keys/              Expected evaluation results
-|-- reports/                  Preserved evaluation reports
-`-- notes.md                  Project history and rule rationale
+├── frontend/
+│   ├── src/
+│   │   ├── app/                    # Next.js App Router pages and styles
+│   │   └── lib/                    # Typed API client, Firebase Auth, CSV export
+│   ├── .env.example
+│   └── package.json
+├── backend/
+│   ├── app/
+│   │   ├── api/                    # Processing and workspace route handlers
+│   │   ├── agent/                  # LangGraph workflow and data schema
+│   │   ├── core/                   # Configuration and Firebase Admin integration
+│   │   ├── models/                 # Pydantic request/response models
+│   │   ├── services/               # Invoice, ZIP, and matching services
+│   │   └── main.py                 # FastAPI bootstrap
+│   ├── scripts/                    # Evaluation and PDF text inspection utilities
+│   ├── tests/                      # Automated backend tests
+│   ├── firebase.json               # Firebase CLI configuration
+│   ├── firestore.rules             # Denies browser-side Firestore access
+│   ├── .firebaserc                 # Firebase project alias
+│   ├── .env.example
+│   └── requirements.txt
+├── invoices/                       # Sample/generated invoice PDFs
+├── answer_keys/                    # Expected evaluation data
+└── README.md                       # Short project reference
 ```
 
-## Install on Windows PowerShell
+## Requirements
 
-From the repository root:
+- Windows PowerShell commands below assume Windows.
+- Python 3.11+ is recommended.
+- Node.js 20+ and npm.
+- A Firebase project with Google Authentication enabled.
+- A Firestore database in the Firebase project.
+- An OpenAI API key or Gemini API key for extraction.
+
+## Initial setup
+
+Run these commands from the repository root:
 
 ```powershell
 python -m venv venv
@@ -47,242 +108,312 @@ python -m venv venv
 npm --prefix frontend install
 ```
 
-Create configuration files if they do not already exist:
+Create local configuration files:
 
 ```powershell
 Copy-Item backend\.env.example backend\.env
 Copy-Item frontend\.env.example frontend\.env.local
 ```
 
-Add the selected provider key to `backend\.env`:
+`backend/.env` and `frontend/.env.local` are ignored by Git. Do not commit API keys or the Firebase service-account JSON file.
+
+## Firebase setup
+
+### 1. Enable Google Authentication
+
+In Firebase Console:
+
+1. Open **Authentication**.
+2. Open **Sign-in method**.
+3. Enable **Google**.
+4. Add your local and deployed domains to **Authorized domains** if Firebase requests it.
+
+The frontend uses the existing Firebase web configuration in `frontend/src/lib/firebase.ts` for Google sign-in.
+
+### 2. Create Firestore
+
+In Firebase Console:
+
+1. Open **Firestore Database**.
+2. Create the database if it does not exist.
+
+### 3. Create a backend service account key
+
+In Firebase Console:
+
+1. Open **Project settings**.
+2. Open **Service accounts**.
+3. Under **Firebase Admin SDK**, select **Generate new private key**.
+4. Store the downloaded JSON outside this repository, for example:
+
+```text
+D:\Trigital\secrets\ai-invoice-service-account.json
+```
+
+This key gives administrative access to Firebase. Never share it, add it to Git, or expose it to the frontend.
+
+### 4. Deploy locked-down Firestore rules
+
+The project is designed so only FastAPI uses Firestore. Deploy the supplied rules after installing and authenticating the Firebase CLI:
+
+```powershell
+Set-Location backend
+firebase deploy --only firestore:rules
+```
+
+The rules deny direct browser reads and writes. Firebase Admin requests from FastAPI bypass rules after FastAPI verifies the caller's Firebase ID token.
+
+## Configuration
+
+### Backend: `backend/.env`
+
+Choose one AI provider and add its valid API key.
 
 ```dotenv
+# AI extraction provider
 AI_PROVIDER=openai
 AI_MODEL=gpt-4o-mini
-OPENAI_API_KEY=replace-with-your-openai-api-key
-GEMINI_API_KEY=replace-with-your-gemini-api-key
+OPENAI_API_KEY=your-openai-api-key
+
+# Or use Gemini instead
+# AI_PROVIDER=gemini
+# AI_MODEL=your-supported-gemini-model
+# GEMINI_API_KEY=your-gemini-api-key
+
+# Browser origins allowed to call FastAPI
 CORS_ORIGINS=http://localhost:3000
-FIREBASE_SERVICE_ACCOUNT_PATH=C:/path/to/firebase-service-account.json
+
+# Firebase Admin — backend only
+FIREBASE_SERVICE_ACCOUNT_PATH=D:/Trigital/secrets/ai-invoice-service-account.json
 FIREBASE_PROJECT_ID=ai-invoice-d6b8a
 ```
 
-For Gemini, use `AI_PROVIDER=gemini`, select a supported Gemini model, and configure
-`GEMINI_API_KEY`. Actual `.env` files are ignored by Git.
+Use forward slashes in a Windows path inside `.env`, as shown above.
 
-Download a Firebase service-account JSON from Firebase Console and keep it outside the repository.
-Only the FastAPI process receives this credential. The browser uses Firebase Authentication for
-Google sign-in, sends the resulting ID token to FastAPI, and never accesses Firestore directly.
+### Frontend: `frontend/.env.local`
 
-## Run
+```dotenv
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+```
+
+This value is safe to expose because it only identifies the FastAPI server URL. Restart Next.js after changing it.
+
+## Run locally
 
 Open two PowerShell terminals in the repository root.
 
-Terminal 1 - backend:
+### Terminal 1 — FastAPI backend
 
 ```powershell
 .\venv\Scripts\python.exe -m uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Terminal 2 - frontend:
+Expected output includes:
+
+```text
+Uvicorn running on http://127.0.0.1:8000
+```
+
+### Terminal 2 — Next.js frontend
 
 ```powershell
 npm --prefix frontend run dev
 ```
 
-Open:
+Open these URLs:
 
-- Web app: <http://localhost:3000>
-- Health check: <http://localhost:8000/api/health>
-- Interactive OpenAPI documentation: <http://localhost:8000/docs>
+| Purpose | URL |
+| --- | --- |
+| Web application | http://localhost:3000 |
+| Backend health check | http://localhost:8000/api/health |
+| Interactive API documentation | http://localhost:8000/docs |
 
-## Browser usage
+## How to use the application
 
-### Purchase-order register
+### Sign in
 
-1. Open **Purchase orders** from the sidebar.
-2. Upload a text-based purchase-order PDF no larger than 20 MB.
-3. The app extracts the PO number, vendor, currency, line items, and totals and asks FastAPI to save
-   them under the signed-in user's private workspace.
-4. Duplicate normalized PO numbers are rejected so invoice lookup stays unambiguous.
+1. Open `http://localhost:3000`.
+2. Select **Sign in with Google**.
+3. Authenticate using an account enabled in your Firebase project.
 
-Firestore access is performed by Firebase Admin in FastAPI. Keep client Firestore rules locked down;
-the included rules remain useful for denying accidental browser-side database access.
+The frontend obtains a Firebase ID token and includes it with authenticated workspace API calls.
 
-### One PDF
+### Save a purchase order
 
-1. Select a text-based `.pdf` no larger than 20 MB.
-2. Click **Check invoice**.
-3. Review the overall status and each field, line-item, calculation, and extraction check.
-4. When the invoice contains a PO number, the app looks for the corresponding saved PO and performs
-   a two-way match. A missing, ambiguous, closed, or cancelled PO requires review.
-5. Download the complete JSON result if needed.
+1. Go to **Purchase orders**.
+2. Select **Upload PO**.
+3. Upload one text-based purchase-order PDF, at most 20 MB.
+4. Confirm the extracted PO data.
 
-### ZIP batch
+The backend rejects duplicate normalized PO numbers to avoid ambiguous invoice matching.
 
-1. Select a `.zip` no larger than 20 MB compressed.
-2. The archive must contain 1 to 10 PDF files and no other file types.
-3. Click **Check batch**.
-4. Review the summary and expand each invoice result.
-5. Download the complete batch response as JSON.
+### Check an invoice
 
-PDFs are processed sequentially to avoid bursts of AI-provider requests. One invalid or scanned PDF
-produces an error for that file without removing successful results from the same accepted batch.
-Selecting another upload clears all previous results and errors.
+1. Go to **Two way match**.
+2. Upload one invoice PDF or a ZIP archive of invoices.
+3. Review extraction details, configured checks, review reasons, and PO matching results.
+4. Download JSON when needed.
 
-OCR is not included. Image-only/scanned PDFs return an `unreadable_pdf` result.
+### Analyze invoices separately
 
-## API
+The **Invoice analyzer** is a separate extraction history. It can process a PDF or ZIP, display saved results, export CSV, and delete historical analyses.
 
-### `GET /api/health`
+## API reference
 
-Returns `{"status":"ok"}` without calling an AI provider.
+The complete, interactive contract is available at `http://localhost:8000/docs` while the backend is running.
 
-### `POST /api/invoices/check`
+### Public processing endpoints
 
-Multipart field: `file`
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/health` | Backend health check. |
+| `POST` | `/api/invoices/check` | Extract and validate one invoice PDF. |
+| `POST` | `/api/invoices/check-batch` | Process a ZIP batch of invoices. |
+| `POST` | `/api/purchase-orders/extract` | Extract one PO PDF. |
+| `POST` | `/api/invoices/two-way-match` | Match supplied invoice and PO data. |
+| `POST` | `/api/invoices/recheck` | Re-run deterministic invoice checks. |
 
-- Accepts one `application/pdf` file.
-- Maximum upload size: 20 MB.
-- Validates PDF signature, parsing, and extractable text.
-- Returns `InvoiceCheckResponse` with `invoice`, `status`, `reasons`, `attempts`, and `checks`.
+### Authenticated workspace endpoints
 
-Each `checks` entry has a stable `id`, display `label`, explanatory `detail`, and one of these
-statuses: `passed`, `failed`, or `not_checked`. The frontend displays the required-field,
-line-item, currency, subtotal arithmetic, total arithmetic, and extraction-retry outcomes. A
-calculation is `not_checked` when the required extracted values are unavailable.
+These require `Authorization: Bearer <Firebase-ID-token>`.
 
-### `POST /api/invoices/check-batch`
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `PUT` | `/api/users/me` | Synchronize basic signed-in user profile details. |
+| `GET`, `POST` | `/api/invoices` | List or save invoice records. |
+| `GET`, `PUT`, `DELETE` | `/api/invoices/{invoice_id}` | Read, update, or delete a saved invoice. |
+| `GET`, `POST` | `/api/purchase-orders` | List or save POs. |
+| `GET`, `PATCH`, `DELETE` | `/api/purchase-orders/{purchase_order_id}` | Read, change PO status, or delete a PO. |
+| `POST` | `/api/purchase-orders/match` | Find and match the caller's saved PO. |
+| `GET`, `POST` | `/api/invoice-analyses` | List or save a standalone analysis. |
+| `POST` | `/api/invoice-analyses/batch` | Save multiple analysis results. |
+| `DELETE` | `/api/invoice-analyses/{analysis_id}` | Delete an analysis. |
 
-Multipart field: `file`
+## Validation and matching
 
-- Accepts `application/zip` or `application/x-zip-compressed`.
-- Also accepts `.zip` with `application/octet-stream` for browser compatibility.
-- Maximum compressed upload: 20 MB.
-- Maximum PDFs: 10.
-- Maximum individual uncompressed PDF: 20 MB.
-- Maximum total uncompressed PDF content: 100 MB.
-- Maximum permitted compression ratio per PDF: 100:1.
-- Processing order: sequential.
+The backend returns transparent configured checks with one of these states:
 
-Example response:
+| Status | Meaning |
+| --- | --- |
+| `passed` | The extracted values satisfy that rule. |
+| `failed` | The rule found a discrepancy and human review is needed. |
+| `not_checked` | Required extracted data was unavailable. |
 
-```json
-{
-  "summary": {
-    "total": 2,
-    "succeeded": 1,
-    "failed": 1
-  },
-  "files": [
-    {
-      "filename": "invoice_01.pdf",
-      "result": {
-        "invoice": {
-          "vendor_name": "Example Vendor",
-          "invoice_number": "INV-001",
-          "invoice_date": "2026-10-07",
-          "po_number": "PO-100",
-          "currency": "USD",
-          "line_items": [],
-          "subtotal": 100,
-          "discount": null,
-          "shipping": null,
-          "tax": 10,
-          "total": 110
-        },
-        "status": "auto_approved",
-        "reasons": [],
-        "attempts": 1
-      },
-      "error": null
-    },
-    {
-      "filename": "scan.pdf",
-      "result": null,
-      "error": {
-        "code": "unreadable_pdf",
-        "message": "No readable text was found. Scanned PDFs need OCR, which is not supported yet."
-      }
-    }
-  ]
-}
-```
+Invoice validation covers required fields, line-item availability, currency, subtotal arithmetic, total arithmetic, and extraction retry behavior.
 
-An accepted archive returns HTTP 200 even when individual PDFs fail. Whole-archive validation
-failures return `400 invalid_zip`; incomplete provider configuration returns 503.
+Two-way matching compares normalized PO number, vendor, currency, line descriptions, quantities, unit prices, individual line limits, and total limits. Its possible results are:
 
-### `POST /api/purchase-orders/extract`
+- `matched`
+- `needs_review`
+- `po_not_found`
+- `ambiguous_po`
+- `po_unavailable` for closed or cancelled purchase orders
 
-Multipart field: `file`
+## ZIP upload policy
 
-- Accepts one text-based `application/pdf` purchase order, at most 20 MB.
-- Returns the extracted `purchase_order`, extraction checks, and attempt count.
+ZIP files are handled without calling `extract()` or `extractall()`. Each accepted PDF is streamed to a generated temporary file within an isolated request directory.
 
-### `POST /api/invoices/two-way-match`
+| Rule | Limit or behavior |
+| --- | --- |
+| ZIP compressed upload | 20 MB maximum |
+| PDFs per archive | 1 to 10 |
+| Individual uncompressed PDF | 20 MB maximum |
+| Total uncompressed PDF data | 100 MB maximum |
+| Compression ratio | 100:1 maximum per PDF |
+| Processing | Sequential |
 
-Accepts extracted invoice and purchase-order JSON. Matching is deterministic: it compares normalized
-PO numbers, vendors, currencies, line descriptions, quantities, unit prices, line limits, and the PO
-total limit. Closed and cancelled POs return `po_unavailable`; failed or incomplete comparisons return
-`needs_review`. This is a two-way match and does not verify receipt of goods.
+The backend rejects path traversal, absolute or drive-letter paths, symbolic links, encrypted entries, nested archives, non-PDF entries, corrupt archives, and suspicious compression ratios.
 
-## ZIP security policy
+OCR is not included. Image-only/scanned PDFs return an `unreadable_pdf` error.
 
-The backend uses Python's standard `zipfile` module but never calls `extract()` or `extractall()`.
-Every PDF is streamed to a generated UUID filename inside the request's isolated temporary
-directory. The complete directory is deleted after success or failure.
+## Testing and verification
 
-The backend rejects:
-
-- Empty archives and archives with more than 10 PDFs.
-- Non-PDF entries and nested ZIP files.
-- Absolute paths, Windows drive paths, and any `..` traversal component.
-- Symbolic links and encrypted entries.
-- Oversized individual or total uncompressed content.
-- Suspicious compression ratios that may indicate a ZIP bomb.
-- Corrupt or unreadable archives.
-
-Both declared ZIP sizes and actual bytes produced during decompression are enforced.
-
-## Error behavior
-
-Whole-request errors use:
-
-```json
-{"error":{"code":"invalid_zip","message":"The ZIP contains an unsafe file path."}}
-```
-
-Provider details, API keys, and stack traces are not returned to the browser. Within an accepted
-batch, invalid PDFs, scanned PDFs, and provider failures use the same safe error structure on the
-corresponding file result.
-
-## Verification
-
-Backend tests use mocked AI results and do not spend provider quota:
+Run backend tests:
 
 ```powershell
 .\venv\Scripts\python.exe -m pytest backend\tests -q
 ```
 
-Frontend verification:
+Run frontend checks:
 
 ```powershell
 npm --prefix frontend run typecheck
 npm --prefix frontend run build
 ```
 
-Tests cover the single-PDF API, batch response contract, upload limits, archive cleanup, partial
-success, path traversal, Windows paths, symbolic links, nested archives, non-PDF entries, excessive
-file counts, suspicious compression ratios, and the preserved workflow rules.
+Run the PDF text-inspection utility without calling an AI provider:
 
-## Evaluation utilities
+```powershell
+.\venv\Scripts\python.exe -m backend.scripts.peek_pdf
+```
 
-These development-only commands are not required to use the web app and may call the configured AI
-provider many times:
+Run the full evaluation suite only when an AI provider key and quota are available:
 
 ```powershell
 .\venv\Scripts\python.exe -m backend.scripts.evaluate
 .\venv\Scripts\python.exe -m backend.scripts.evaluate --reuse
-.\venv\Scripts\python.exe -m backend.scripts.peek_pdf
 ```
 
-See [notes.md](notes.md) for the original workflow reasoning and evaluation history.
+## Troubleshooting
+
+### Browser says it cannot reach the invoice service
+
+The backend is not running, the frontend points to the wrong API URL, or port 8000 is unavailable.
+
+1. Start FastAPI with the command in [Run locally](#run-locally).
+2. Open `http://localhost:8000/api/health`.
+3. Confirm `frontend/.env.local` has `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000`.
+4. Restart the Next.js development server after changing `.env.local`.
+
+### Workspace API returns 401
+
+Sign in again. FastAPI requires a valid Firebase ID token for saved workspace records.
+
+### Workspace API returns 503 about Firebase Admin
+
+Check both values in `backend/.env`:
+
+```dotenv
+FIREBASE_SERVICE_ACCOUNT_PATH=...
+FIREBASE_PROJECT_ID=ai-invoice-d6b8a
+```
+
+Confirm the JSON file exists at that path and restart FastAPI.
+
+### Google sign-in popup fails
+
+Verify that Google is enabled under Firebase Authentication and that the local/deployed domain is authorized in Firebase.
+
+### Firestore data cannot be loaded or saved
+
+Verify that FastAPI is running with valid Firebase Admin credentials. The browser is intentionally denied direct Firestore access by `firestore.rules`.
+
+### AI extraction returns 503
+
+The selected provider is not fully configured. Check `AI_PROVIDER` and the appropriate API key in `backend/.env`, then restart FastAPI.
+
+### AI extraction returns 502
+
+The configured provider could not process the request. Check provider quota, billing, model availability, and the backend terminal logs. Do not expose provider errors or API keys in frontend logs.
+
+### Upload is rejected
+
+Check file type, size, PDF text availability, and ZIP policy limits. Text-based PDFs are required because OCR is not currently implemented.
+
+## Security notes
+
+- Keep `backend/.env`, `frontend/.env.local`, API keys, and service-account JSON files out of Git.
+- Never use a Firebase Admin service-account key in the browser.
+- Keep `firestore.rules` deployed so direct client Firestore access remains denied.
+- Use HTTPS and a narrow `CORS_ORIGINS` list in production.
+- Set `NEXT_PUBLIC_API_BASE_URL` to the production HTTPS API URL when deploying.
+- Restrict Firebase Authentication authorized domains to your local and production domains.
+- Rotate a service-account key immediately if it may have been exposed.
+
+## Additional project files
+
+- `README.md` — concise overview and common commands.
+- `backend/README.md` — backend-specific notes.
+- `frontend/README.md` — frontend-specific notes.
+- `notes.md` — workflow rationale and evaluation history.
+- `reports/` — preserved evaluation reports.
