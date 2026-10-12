@@ -1,5 +1,5 @@
-from backend.agent.schema import Invoice, LineItem
-from backend.agent.workflow import (
+from backend.app.agent.schema import Invoice, LineItem
+from backend.app.agent.workflow import (
     STATUS_AUTO_APPROVED,
     STATUS_NEEDS_REVIEW,
     decide,

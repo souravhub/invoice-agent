@@ -42,3 +42,17 @@ class Invoice(BaseModel):
     )
     tax: Optional[float] = Field(default=None, description="Total tax amount (GST/VAT etc.)")
     total: Optional[float] = Field(default=None, description="Final amount due")
+
+
+class PurchaseOrder(BaseModel):
+    """Fields required to match supplier invoices to a purchase order."""
+
+    vendor_name: Optional[str] = Field(default=None, description="Supplier named on the purchase order")
+    po_number: Optional[str] = Field(default=None, description="Purchase order number / ID")
+    order_date: Optional[str] = Field(default=None, description="Purchase order date in YYYY-MM-DD format")
+    currency: Optional[str] = Field(default=None, description="3-letter currency code, e.g. USD, INR, EUR")
+    line_items: List[LineItem] = Field(default_factory=list, description="Every ordered line item")
+    subtotal: Optional[float] = Field(default=None, description="Subtotal before tax and shipping")
+    shipping: Optional[float] = Field(default=None, description="Authorized shipping or freight amount")
+    tax: Optional[float] = Field(default=None, description="Authorized tax amount")
+    total: Optional[float] = Field(default=None, description="Total value authorized by the purchase order")

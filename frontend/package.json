@@ -9,9 +9,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "firebase": "12.4.0",
     "next": "16.4.0",
     "react": "19.3.0",
     "react-dom": "19.3.0"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "1.14.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

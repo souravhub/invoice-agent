@@ -1,6 +1,6 @@
 """
 STEP 4: Measure how accurate the workflow is.
-Usage:  python evaluate.py
+Usage:  python -m backend.scripts.evaluate
 
 Runs every PDF in invoices/ through the workflow, compares the result to the
 matching answer key in answer_keys/, and writes results/evaluation_report_<provider>_<model>.md.
@@ -15,9 +15,9 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from .agent.workflow import STATUS_AUTO_APPROVED, build_graph, provider_and_model, run_dir, run_slug
+from ..app.agent.workflow import STATUS_AUTO_APPROVED, build_graph, provider_and_model, run_dir, run_slug
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(PROJECT_ROOT / "backend" / ".env")
 
 INVOICES_DIR = PROJECT_ROOT / "invoices"

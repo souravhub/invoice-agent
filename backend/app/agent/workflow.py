@@ -28,9 +28,9 @@ from langgraph.graph import StateGraph, START, END
 from .schema import Invoice
 
 MAX_RETRIES = 2
-# Note: "gemini-2.5-flash" was the old default but now returns 404 (retired), so the fallback
-# is a model that is still served. AI_MODEL in .env overrides this.
-DEFAULT_MODELS = {"openai": "gpt-4o-mini", "gemini": "gemini-2.5-flash-lite"}
+# Google restricts the 2.5 family for new API accounts. Use a current Flash Lite model that
+# supports structured extraction; AI_MODEL in .env still overrides this.
+DEFAULT_MODELS = {"openai": "gpt-4o-mini", "gemini": "gemini-3.5-flash-lite"}
 
 STATUS_AUTO_APPROVED = "auto_approved"
 STATUS_NEEDS_REVIEW = "needs_review"

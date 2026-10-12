@@ -73,8 +73,8 @@ python -m venv venv                                            # 1. create a pri
 ### Everyday commands
 
 ```powershell
-.\venv\Scripts\python.exe -m backend.peek_pdf                       # see the text the AI will receive
-.\venv\Scripts\python.exe -m backend.evaluate                       # score accuracy on all test invoices
+.\venv\Scripts\python.exe -m backend.scripts.peek_pdf               # see the text the AI will receive
+.\venv\Scripts\python.exe -m backend.scripts.evaluate               # score accuracy on all test invoices
 ```
 
 **Tip:** run `.\venv\Scripts\Activate.ps1` once per terminal. After that, plain `python` works in that terminal.
@@ -95,9 +95,9 @@ python -m venv venv                                            # 1. create a pri
 ## 3. Demo script (about 5 minutes)
 
 1. **Show the input:** open `invoices/invoice_04.pdf`, a busy invoice with 10 line items and tax split into two lines.
-2. **Show what the AI receives:** run `python -m backend.peek_pdf`. The table becomes plain lines of text, with no columns or layout.
+2. **Show what the AI receives:** run `python -m backend.scripts.peek_pdf`. The table becomes plain lines of text, with no columns or layout.
 3. **Check one invoice:** upload `invoices/invoice_04.pdf` in the web app. It shows clean structured data, the combined tax, and the configured-check status.
-4. **Show the accuracy score:** run `python -m backend.evaluate`. It shows the per-field accuracy table and the overall score.
+4. **Show the accuracy score:** run `python -m backend.scripts.evaluate`. It shows the per-field accuracy table and the overall score.
 5. **Show flexibility:** change `AI_PROVIDER` in `backend/.env` to switch AI vendors without changing any code.
 
 ---
@@ -486,8 +486,28 @@ do real work: they are what makes a cheaper or weaker model usable at all.
 
 ## 9. Open items
 
-- [ ] **Re-run `python -m backend.evaluate` and compare against `reports/evaluation_report_BEFORE_FIX.md`** to see whether the three fixes brought the 20% silent error rate down. Blocked only by the daily Gemini quota.
-- [ ] **Run `python -m backend.evaluate` with OpenAI** (`AI_PROVIDER=openai`) once an API key with credits is available, and compare the results with Gemini.
+- [ ] **Re-run `python -m backend.scripts.evaluate` and compare against `reports/evaluation_report_BEFORE_FIX.md`** to see whether the three fixes brought the 20% silent error rate down. Blocked only by the daily Gemini quota.
+- [ ] **Run `python -m backend.scripts.evaluate` with OpenAI** (`AI_PROVIDER=openai`) once an API key with credits is available, and compare the results with Gemini.
 - [ ] **Test scanned or photographed invoices**, which needs OCR. Multi-page, discounts, freight and mixed-language invoices are now covered by invoice_06 to invoice_15.
 - [ ] **Agree the convention for invoice_13**: when no subtotal is printed, should `subtotal` be null or a copy of the total? This decides whether that case is a bug or a preference.
 - [x] **Add a `.gitignore` file** so Git never saves `.env` (secret keys), `venv/` (large, and can be rebuilt) or `__pycache__/` (Python's temporary files).
+
+---
+
+## 10. Web and ZIP batch support (7 October 2026)
+
+- Added a Next.js and Tailwind browser interface backed by FastAPI.
+- Kept the LangGraph workflow under `backend/agent/`; the API calls the same `build_graph().invoke()`
+  behavior used by evaluation.
+- Added `POST /api/invoices/check` for one PDF and `POST /api/invoices/check-batch` for one ZIP.
+- ZIP batches contain 1 to 10 PDFs and are processed sequentially to avoid provider request bursts.
+- Batch responses retain successful invoice results when another PDF is corrupt, scanned, or fails
+  at the provider.
+- `backend/app/services/archives.py` rejects traversal paths, absolute/drive paths, symbolic links, encrypted
+  entries, nested ZIPs, non-PDF files, suspicious compression ratios, and excessive decompressed
+  sizes. It never uses `extract()` or `extractall()`.
+- Both upload types use isolated temporary directories that are removed after success or failure.
+- The browser downloads complete single or batch results as JSON. ZIP result cards can be expanded
+  independently.
+- Passing checks remains a validation outcome only, not payment authorization or proof of invoice
+  authenticity.
