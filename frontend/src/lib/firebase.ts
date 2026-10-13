@@ -2,13 +2,13 @@ import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDFe4RTiIlT2U39Auki_TtWY6KJglDZF_M",
-  authDomain: "ai-invoice-d6b8a.firebaseapp.com",
-  projectId: "ai-invoice-d6b8a",
-  storageBucket: "ai-invoice-d6b8a.firebasestorage.app",
-  messagingSenderId: "971533055874",
-  appId: "1:971533055874:web:62d54494b42778a326419b",
-  measurementId: "G-7K2TQWMVR9",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
 export const firebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
