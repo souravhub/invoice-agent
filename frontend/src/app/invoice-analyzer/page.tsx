@@ -262,8 +262,6 @@ export default function InvoiceAnalyzerPage() {
           <button className="primary-button header-button" type="button" onClick={openUploadModal}><Icon size={18}><path d="M12 5v14M5 12h14" /></Icon>Upload invoice</button>
         </header>
 
-        <section className="analyzer-privacy"><Icon size={18}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /><path d="m9 12 2 2 4-4" /></Icon><div><strong>Separate analyzer storage</strong><span>Analyzer records are stored in their own private collection and do not appear in two-way-match history or dashboard totals. Uploaded PDFs are not retained.</span></div></section>
-
         {notice && <div className="analyzer-save-notice" role="status"><Icon size={17}><path d="m5 12 4 4L19 6" /></Icon><span>{notice}</span></div>}
         {actionError && <div className="error-message analyzer-action-error" role="alert"><Icon size={18}><path d="M12 9v4M12 17h.01" /><circle cx="12" cy="12" r="9" /></Icon>{actionError}</div>}
 

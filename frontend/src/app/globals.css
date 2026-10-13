@@ -204,10 +204,6 @@ body.modal-open { overflow: hidden; }
 
 /* Standalone invoice analyzer */
 .analyzer-content { background: #faf9fb; }
-.analyzer-privacy { display: flex; align-items: center; gap: 11px; margin-bottom: 18px; padding: 13px 15px; color: #3f684d; border: 1px solid #cae5d2; border-radius: 12px; background: #f1faf4; }
-.analyzer-privacy > div, .analyzer-privacy strong, .analyzer-privacy span { display: block; }
-.analyzer-privacy strong { font-size: 11px; }
-.analyzer-privacy span { margin-top: 3px; color: #65766a; font-size: 9px; }
 .analyzer-upload-card { max-width: 900px; margin: 0 auto; }
 .analyzer-upload-card .eyebrow { margin-left: 0; }
 .analyzer-unsaved-badge { padding: 6px 9px; color: #5a705f; border-radius: 999px; background: #eaf5ed; font-size: 9px; font-weight: 800; }
