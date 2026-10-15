@@ -248,6 +248,7 @@ export default function InvoiceAnalyzerPage() {
           <Link className="nav-item" href="/"><InvoiceIcon size={19} /><span>Two way match</span></Link>
           <Link className="nav-item active" href="/invoice-analyzer" aria-current="page"><AnalyzerIcon size={19} /><span>Invoice analyzer</span></Link>
           <Link className="nav-item" href="/purchase-orders"><Icon size={19}><path d="M6 3h12v18H6z" /><path d="M9 8h6M9 12h6M9 16h4" /></Icon><span>Purchase orders</span></Link>
+          <Link className="nav-item" href="/gmail-connect"><Icon size={19}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></Icon><span>Gmail Connect</span></Link>
         </nav>
         <div className="sidebar-footer">
           {user.photoURL ? <img className="mini-avatar" src={user.photoURL} alt="" referrerPolicy="no-referrer" /> : <div className="mini-avatar">{(user.displayName || user.email || "U")[0].toUpperCase()}</div>}
@@ -261,8 +262,6 @@ export default function InvoiceAnalyzerPage() {
           <div><p className="eyebrow">Standalone tool</p><h1>Invoice analyzer</h1><p>Analyze invoices and keep them separate from two-way matching.</p></div>
           <button className="primary-button header-button" type="button" onClick={openUploadModal}><Icon size={18}><path d="M12 5v14M5 12h14" /></Icon>Upload invoice</button>
         </header>
-
-        <section className="analyzer-privacy"><Icon size={18}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /><path d="m9 12 2 2 4-4" /></Icon><div><strong>Separate analyzer storage</strong><span>Analyzer records are stored in their own private collection and do not appear in two-way-match history or dashboard totals. Uploaded PDFs are not retained.</span></div></section>
 
         {notice && <div className="analyzer-save-notice" role="status"><Icon size={17}><path d="m5 12 4 4L19 6" /></Icon><span>{notice}</span></div>}
         {actionError && <div className="error-message analyzer-action-error" role="alert"><Icon size={18}><path d="M12 9v4M12 17h.01" /><circle cx="12" cy="12" r="9" /></Icon>{actionError}</div>}

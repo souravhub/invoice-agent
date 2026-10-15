@@ -1,6 +1,13 @@
 # Secret keys and private settings (examples remain tracked)
 .env
 **/.env
+.env*.local
+**/.env*.local
+**/credentials.json
+**/token.json
+
+# Invoice attachments saved from Gmail (private user documents)
+backend/storage/
 
 # Virtual environment (large; rebuild with: python -m venv venv + pip install -r requirements.txt)
 venv/
