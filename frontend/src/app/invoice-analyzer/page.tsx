@@ -248,6 +248,7 @@ export default function InvoiceAnalyzerPage() {
           <Link className="nav-item" href="/"><InvoiceIcon size={19} /><span>Two way match</span></Link>
           <Link className="nav-item active" href="/invoice-analyzer" aria-current="page"><AnalyzerIcon size={19} /><span>Invoice analyzer</span></Link>
           <Link className="nav-item" href="/purchase-orders"><Icon size={19}><path d="M6 3h12v18H6z" /><path d="M9 8h6M9 12h6M9 16h4" /></Icon><span>Purchase orders</span></Link>
+          <Link className="nav-item" href="/gmail-connect"><Icon size={19}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></Icon><span>Gmail Connect</span></Link>
         </nav>
         <div className="sidebar-footer">
           {user.photoURL ? <img className="mini-avatar" src={user.photoURL} alt="" referrerPolicy="no-referrer" /> : <div className="mini-avatar">{(user.displayName || user.email || "U")[0].toUpperCase()}</div>}

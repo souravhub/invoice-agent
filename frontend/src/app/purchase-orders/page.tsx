@@ -161,6 +161,7 @@ export default function PurchaseOrdersPage() {
           <Link className="nav-item" href="/"><Icon size={19}><path d="M6 3h9l3 3v15H6z" /><path d="M14 3v4h4M9 11h6M9 15h6" /></Icon><span>Two way match</span></Link>
           <Link className="nav-item" href="/invoice-analyzer"><Icon size={19}><path d="M4 19V5a2 2 0 0 1 2-2h8l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" /><path d="M14 3v5h5M8 13h8M8 17h5" /></Icon><span>Invoice analyzer</span></Link>
           <Link className="nav-item active" href="/purchase-orders" aria-current="page"><PurchaseOrderIcon size={19} /><span>Purchase orders</span></Link>
+          <Link className="nav-item" href="/gmail-connect"><Icon size={19}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></Icon><span>Gmail Connect</span></Link>
         </nav>
         <div className="sidebar-footer">
           {user.photoURL ? <img className="mini-avatar" src={user.photoURL} alt="" referrerPolicy="no-referrer" /> : <div className="mini-avatar">{(user.displayName || "U")[0]}</div>}

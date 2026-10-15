@@ -299,6 +299,110 @@ export function deleteSavedAnalysis(id: string): Promise<void> {
   return apiJson<void>(`/api/invoice-analyses/${encodeURIComponent(id)}`, { method: "DELETE" }, true);
 }
 
+export type GmailStatus = {
+  configured: boolean;
+  connected: boolean;
+  email: string | null;
+};
+
+export type GmailAttachment = {
+  part_id: string;
+  filename: string;
+  mime_type: string;
+  size: number | null;
+  saved_id: string | null;
+  saved_status: "new" | "existing" | null;
+};
+
+export type GmailMessage = {
+  id: string;
+  sender: string;
+  subject: string;
+  received: string | null;
+  attachments: GmailAttachment[];
+  note: string;
+};
+
+export type GmailSearchResult = {
+  query: string;
+  messages: GmailMessage[];
+  saved_new: number;
+  already_saved: number;
+  failed: number;
+};
+
+export type SavedGmailInvoice = {
+  id: string;
+  messageId: string;
+  partId: string;
+  sender: string;
+  subject: string;
+  receivedAt: string | null;
+  fileName: string;
+  storedFileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  createdAt: ApiTimestamp | null;
+};
+
+export function listSavedGmailInvoices(limit = 100): Promise<SavedGmailInvoice[]> {
+  return apiJson<Array<Omit<SavedGmailInvoice, "createdAt"> & { createdAt: string | null }>>(
+    `/api/gmail/invoices?limit=${limit}`, {}, true,
+  ).then((records) => records.map((record) => ({ ...record, createdAt: apiTimestamp(record.createdAt) })));
+}
+
+export function deleteSavedGmailInvoice(id: string): Promise<void> {
+  return apiJson<void>(`/api/gmail/invoices/${encodeURIComponent(id)}`, { method: "DELETE" }, true);
+}
+
+export function fetchSavedGmailInvoiceFile(id: string): Promise<Blob> {
+  return authenticatedBlob(`/api/gmail/invoices/${encodeURIComponent(id)}/file`);
+}
+
+export function getGmailStatus(): Promise<GmailStatus> {
+  return apiJson<GmailStatus>("/api/gmail/status", {}, true);
+}
+
+export function startGmailConnect(): Promise<{ url: string }> {
+  return apiJson<{ url: string }>("/api/gmail/connect", { method: "POST" }, true);
+}
+
+export function disconnectGmail(): Promise<void> {
+  return apiJson<void>("/api/gmail/disconnect", { method: "POST" }, true);
+}
+
+export function searchGmailInvoices(dateFrom: string, dateTo: string): Promise<GmailSearchResult> {
+  const params = new URLSearchParams();
+  if (dateFrom) params.set("date_from", dateFrom);
+  if (dateTo) params.set("date_to", dateTo);
+  const query = params.toString();
+  return apiJson<GmailSearchResult>(`/api/gmail/messages${query ? `?${query}` : ""}`, {}, true);
+}
+
+export function fetchGmailAttachment(messageId: string, partId: string): Promise<Blob> {
+  return authenticatedBlob(
+    `/api/gmail/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(partId)}`,
+  );
+}
+
+async function authenticatedBlob(path: string): Promise<Blob> {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Sign in is required for this request.");
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      headers: { Authorization: `Bearer ${await user.getIdToken()}` },
+    });
+  } catch {
+    throw new Error("Could not reach the invoice service. Check that the backend is running.");
+  }
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => ({}))) as ErrorPayload;
+    throw new Error(payload.detail || "The attachment could not be downloaded.");
+  }
+  return response.blob();
+}
+
 export async function extractPurchaseOrder(file: File): Promise<PurchaseOrderExtractionResult> {
   const formData = new FormData();
   formData.append("file", file);
